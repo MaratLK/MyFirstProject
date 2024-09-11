@@ -2,11 +2,13 @@
 using Microsoft.EntityFrameworkCore;
 using PLK_TwoTry_Back.Models;
 using PLKTransit.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PLKTransit.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]  // Защищаем доступ к методам сервиса, только авторизованные пользователи могут вызывать эти методы
     public class ServicesController : ControllerBase
     {
         private readonly PLKTransitContext _context;
@@ -18,9 +20,14 @@ namespace PLKTransit.Controllers
 
         // GET: api/Services
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Services>>> GetServices()
+        public async Task<ActionResult<IEnumerable<Services>>> GetServices([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            return await _context.Services.ToListAsync();
+            var services = await _context.Services
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(services);
         }
 
         // GET: api/Services/5
@@ -31,16 +38,21 @@ namespace PLKTransit.Controllers
 
             if (service == null)
             {
-                return NotFound();
+                return NotFound($"Сервис с ID {id} не найден.");
             }
 
-            return service;
+            return Ok(service);
         }
 
         // POST: api/Services
         [HttpPost]
-        public async Task<ActionResult<Services>> PostService(Services service)
+        public async Task<ActionResult<Services>> PostService([FromBody] Services service)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             _context.Services.Add(service);
             await _context.SaveChangesAsync();
 
@@ -49,11 +61,16 @@ namespace PLKTransit.Controllers
 
         // PUT: api/Services/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutService(int id, Services service)
+        public async Task<IActionResult> PutService(int id, [FromBody] Services service)
         {
             if (id != service.ServiceID)
             {
-                return BadRequest();
+                return BadRequest("ID сервиса не совпадает.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
             }
 
             _context.Entry(service).State = EntityState.Modified;
@@ -66,7 +83,7 @@ namespace PLKTransit.Controllers
             {
                 if (!ServiceExists(id))
                 {
-                    return NotFound();
+                    return NotFound($"Сервис с ID {id} не найден.");
                 }
                 else
                 {
@@ -84,7 +101,7 @@ namespace PLKTransit.Controllers
             var service = await _context.Services.FindAsync(id);
             if (service == null)
             {
-                return NotFound();
+                return NotFound($"Сервис с ID {id} не найден.");
             }
 
             _context.Services.Remove(service);

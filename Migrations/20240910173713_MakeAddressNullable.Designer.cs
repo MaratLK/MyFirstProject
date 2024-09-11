@@ -12,8 +12,8 @@ using PLKTransit.Data;
 namespace PLK_TwoTry_Back.Migrations
 {
     [DbContext(typeof(PLKTransitContext))]
-    [Migration("20240805085533_UpdateUsersModel")]
-    partial class UpdateUsersModel
+    [Migration("20240910173713_MakeAddressNullable")]
+    partial class MakeAddressNullable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,36 @@ namespace PLK_TwoTry_Back.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.OrderServices", b =>
+            modelBuilder.Entity("News", b =>
+                {
+                    b.Property<int>("NewsID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NewsID"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DatePublished")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("NewsID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("News");
+                });
+
+            modelBuilder.Entity("OrderServices", b =>
                 {
                     b.Property<int>("OrderServiceID")
                         .ValueGeneratedOnAdd()
@@ -54,7 +83,7 @@ namespace PLK_TwoTry_Back.Migrations
                     b.ToTable("OrderServices");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.Orders", b =>
+            modelBuilder.Entity("Orders", b =>
                 {
                     b.Property<int>("OrderID")
                         .ValueGeneratedOnAdd()
@@ -83,6 +112,28 @@ namespace PLK_TwoTry_Back.Migrations
                     b.HasIndex("UserID");
 
                     b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("PLK_TwoTry_Back.Models.NewsImage", b =>
+                {
+                    b.Property<int>("NewsImageID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NewsImageID"));
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("NewsID")
+                        .HasColumnType("int");
+
+                    b.HasKey("NewsImageID");
+
+                    b.HasIndex("NewsID");
+
+                    b.ToTable("NewsImages");
                 });
 
             modelBuilder.Entity("PLK_TwoTry_Back.Models.Roles", b =>
@@ -150,7 +201,31 @@ namespace PLK_TwoTry_Back.Migrations
                     b.ToTable("SpecialVehicles");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.Users", b =>
+            modelBuilder.Entity("PLK_TwoTry_Back.Models.Warehouses", b =>
+                {
+                    b.Property<int>("WarehouseID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("WarehouseID"));
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WarehouseName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("WarehouseID");
+
+                    b.ToTable("Warehouses");
+                });
+
+            modelBuilder.Entity("Users", b =>
                 {
                     b.Property<int>("UserID")
                         .ValueGeneratedOnAdd()
@@ -159,7 +234,6 @@ namespace PLK_TwoTry_Back.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserID"));
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CompanyName")
@@ -201,7 +275,7 @@ namespace PLK_TwoTry_Back.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.VehicleAssignments", b =>
+            modelBuilder.Entity("VehicleAssignments", b =>
                 {
                     b.Property<int>("AssignmentID")
                         .ValueGeneratedOnAdd()
@@ -227,7 +301,7 @@ namespace PLK_TwoTry_Back.Migrations
                     b.ToTable("VehicleAssignments");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.WarehouseAssignments", b =>
+            modelBuilder.Entity("WarehouseAssignments", b =>
                 {
                     b.Property<int>("AssignmentID")
                         .ValueGeneratedOnAdd()
@@ -253,33 +327,20 @@ namespace PLK_TwoTry_Back.Migrations
                     b.ToTable("WarehouseAssignments");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.Warehouses", b =>
+            modelBuilder.Entity("News", b =>
                 {
-                    b.Property<int>("WarehouseID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                    b.HasOne("Users", "User")
+                        .WithMany("News")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("WarehouseID"));
-
-                    b.Property<int>("Capacity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("WarehouseName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("WarehouseID");
-
-                    b.ToTable("Warehouses");
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.OrderServices", b =>
+            modelBuilder.Entity("OrderServices", b =>
                 {
-                    b.HasOne("PLK_TwoTry_Back.Models.Orders", "Order")
+                    b.HasOne("Orders", "Order")
                         .WithMany()
                         .HasForeignKey("OrderID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -296,10 +357,10 @@ namespace PLK_TwoTry_Back.Migrations
                     b.Navigation("Service");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.Orders", b =>
+            modelBuilder.Entity("Orders", b =>
                 {
-                    b.HasOne("PLK_TwoTry_Back.Models.Users", "User")
-                        .WithMany()
+                    b.HasOne("Users", "User")
+                        .WithMany("Orders")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -307,7 +368,18 @@ namespace PLK_TwoTry_Back.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.Users", b =>
+            modelBuilder.Entity("PLK_TwoTry_Back.Models.NewsImage", b =>
+                {
+                    b.HasOne("News", "News")
+                        .WithMany("NewsImages")
+                        .HasForeignKey("NewsID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("News");
+                });
+
+            modelBuilder.Entity("Users", b =>
                 {
                     b.HasOne("PLK_TwoTry_Back.Models.Roles", "Role")
                         .WithMany()
@@ -318,9 +390,9 @@ namespace PLK_TwoTry_Back.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.VehicleAssignments", b =>
+            modelBuilder.Entity("VehicleAssignments", b =>
                 {
-                    b.HasOne("PLK_TwoTry_Back.Models.Orders", "Order")
+                    b.HasOne("Orders", "Order")
                         .WithMany()
                         .HasForeignKey("OrderID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -337,9 +409,9 @@ namespace PLK_TwoTry_Back.Migrations
                     b.Navigation("Vehicle");
                 });
 
-            modelBuilder.Entity("PLK_TwoTry_Back.Models.WarehouseAssignments", b =>
+            modelBuilder.Entity("WarehouseAssignments", b =>
                 {
-                    b.HasOne("PLK_TwoTry_Back.Models.Orders", "Order")
+                    b.HasOne("Orders", "Order")
                         .WithMany()
                         .HasForeignKey("OrderID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -354,6 +426,18 @@ namespace PLK_TwoTry_Back.Migrations
                     b.Navigation("Order");
 
                     b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("News", b =>
+                {
+                    b.Navigation("NewsImages");
+                });
+
+            modelBuilder.Entity("Users", b =>
+                {
+                    b.Navigation("News");
+
+                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }

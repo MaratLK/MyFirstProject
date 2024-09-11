@@ -2,11 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using PLK_TwoTry_Back.Models;
 using PLKTransit.Data;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace PLKTransit.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Защищаем все маршруты, доступ только для авторизованных пользователей
     public class OrdersController : ControllerBase
     {
         private readonly PLKTransitContext _context;
@@ -18,29 +21,47 @@ namespace PLKTransit.Controllers
 
         // GET: api/Orders
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Orders>>> GetOrders()
+        public async Task<ActionResult<IEnumerable<Orders>>> GetOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            return await _context.Orders.Include(o => o.User).ToListAsync();
+            var orders = await _context.Orders
+                .Include(o => o.User)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(orders);
         }
 
         // GET: api/Orders/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Orders>> GetOrder(int id)
         {
-            var order = await _context.Orders.Include(o => o.User).FirstOrDefaultAsync(o => o.OrderID == id);
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.OrderID == id);
 
             if (order == null)
             {
-                return NotFound();
+                return NotFound($"Заказ с ID {id} не найден.");
             }
 
-            return order;
+            return Ok(order);
         }
 
         // POST: api/Orders
         [HttpPost]
         public async Task<ActionResult<Orders>> PostOrder(Orders order)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // Получаем ID текущего пользователя из JWT-токена
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            order.UserID = userId;
+            order.OrderDate = DateTime.Now;
+
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
@@ -53,7 +74,14 @@ namespace PLKTransit.Controllers
         {
             if (id != order.OrderID)
             {
-                return BadRequest();
+                return BadRequest("ID заказа не совпадает.");
+            }
+
+            // Проверка прав: только создатель заказа может его редактировать
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            if (order.UserID != userId)
+            {
+                return Forbid("У вас нет прав для изменения этого заказа.");
             }
 
             _context.Entry(order).State = EntityState.Modified;
@@ -66,7 +94,7 @@ namespace PLKTransit.Controllers
             {
                 if (!OrderExists(id))
                 {
-                    return NotFound();
+                    return NotFound($"Заказ с ID {id} не найден.");
                 }
                 else
                 {
@@ -84,7 +112,14 @@ namespace PLKTransit.Controllers
             var order = await _context.Orders.FindAsync(id);
             if (order == null)
             {
-                return NotFound();
+                return NotFound($"Заказ с ID {id} не найден.");
+            }
+
+            // Проверка прав: только создатель заказа может его удалить
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            if (order.UserID != userId)
+            {
+                return Forbid("У вас нет прав для удаления этого заказа.");
             }
 
             _context.Orders.Remove(order);

@@ -15,6 +15,8 @@ namespace PLKTransit.Data
         public DbSet<SpecialVehicles> SpecialVehicles { get; set; }
         public DbSet<VehicleAssignments> VehicleAssignments { get; set; }
         public DbSet<WarehouseAssignments> WarehouseAssignments { get; set; }
+        public DbSet<News> News { get; set; }
+        public DbSet<NewsImage> NewsImages { get; set; }
         public DbSet<Roles> Roles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

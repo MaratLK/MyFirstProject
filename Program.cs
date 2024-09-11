@@ -9,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Configure the database context with connection string
 builder.Services.AddDbContext<PLKTransitContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("PLKTransitContext")));
 
@@ -30,14 +32,14 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    options.RequireHttpsMetadata = false; // In production, consider setting this to true for security
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = false, // Изменено на false
-        ValidateAudience = false // Изменено на false
+        ValidateIssuer = false, // Configure `true` in production if you have a specific issuer
+        ValidateAudience = false // Configure `true` in production if you have a specific audience
     };
 });
 
@@ -72,11 +74,10 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure middleware for development or production environments
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-    // Enable Swagger in development mode
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -88,14 +89,13 @@ else
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
-    // Enable Swagger in production mode if needed
-    app.UseSwagger();
+    app.UseSwagger(); // Ensure Swagger is available even in production
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "PLKTransit API V1");
         c.RoutePrefix = "swagger";
     });
-}   
+}
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -104,9 +104,9 @@ app.UseRouting();
 
 app.UseCors("AllowAllOrigins");
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthentication(); // Enable JWT authentication
+app.UseAuthorization();  // Enable authorization after authentication
 
-app.MapControllers();
+app.MapControllers();  // Map all controller endpoints
 
 app.Run();

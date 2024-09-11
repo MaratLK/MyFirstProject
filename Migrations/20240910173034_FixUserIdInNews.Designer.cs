@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PLKTransit.Data;
 
@@ -11,9 +12,11 @@ using PLKTransit.Data;
 namespace PLK_TwoTry_Back.Migrations
 {
     [DbContext(typeof(PLKTransitContext))]
-    partial class PLKTransitContextModelSnapshot : ModelSnapshot
+    [Migration("20240910173034_FixUserIdInNews")]
+    partial class FixUserIdInNews
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -231,6 +234,7 @@ namespace PLK_TwoTry_Back.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserID"));
 
                     b.Property<string>("Address")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CompanyName")
@@ -327,7 +331,7 @@ namespace PLK_TwoTry_Back.Migrations
             modelBuilder.Entity("News", b =>
                 {
                     b.HasOne("Users", "User")
-                        .WithMany()
+                        .WithMany("News")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -357,7 +361,7 @@ namespace PLK_TwoTry_Back.Migrations
             modelBuilder.Entity("Orders", b =>
                 {
                     b.HasOne("Users", "User")
-                        .WithMany()
+                        .WithMany("Orders")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -428,6 +432,13 @@ namespace PLK_TwoTry_Back.Migrations
             modelBuilder.Entity("News", b =>
                 {
                     b.Navigation("NewsImages");
+                });
+
+            modelBuilder.Entity("Users", b =>
+                {
+                    b.Navigation("News");
+
+                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }

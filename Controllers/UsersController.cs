@@ -26,9 +26,15 @@ namespace PLKTransit.Controllers
         // GET: api/Users
         [HttpGet]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<Users>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<Users>>> GetUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            return await _context.Users.Include(u => u.Role).ToListAsync();
+            var users = await _context.Users
+                .Include(u => u.Role)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(users);
         }
 
         // GET: api/Users/5
@@ -48,53 +54,45 @@ namespace PLKTransit.Controllers
 
         // POST: api/Users/register
         [HttpPost("register")]
-        public async Task<ActionResult<Users>> RegisterUser(Users user)
+        public async Task<ActionResult<Users>> RegisterUser(RegisterUserRequest request)
         {
-            if (user.RoleID == 0)
+            // Проверка на наличие пользователя с таким email
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
-                var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "User");
-                if (defaultRole != null)
-                {
-                    user.RoleID = defaultRole.RoleID;
-                }
-                else
-                {
-                    return BadRequest("Default role not found.");
-                }
+                return BadRequest("Пользователь с таким email уже существует.");
             }
 
-            user.Role = await _context.Roles.FindAsync(user.RoleID);
+            var defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Client");
+            if (defaultRole == null)
+            {
+                return BadRequest("Роль пользователя по умолчанию не найдена.");
+            }
 
-            // Хэширование пароля
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
-            user.DateRegistered = DateTime.Now;
-
+            var user = new Users
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
+                CompanyName = request.CompanyName,
+                RoleID = defaultRole.RoleID,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),  // Хэшируем пароль
+                DateRegistered = DateTime.Now
+            };
             _context.Users.Add(user);
-
-            try
-            {
-                int result = await _context.SaveChangesAsync();
-                Console.WriteLine($"SaveChangesAsync result: {result}"); // Вывод результата в консоль
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}"); // Вывод исключения в консоль
-                throw;
-            }
+            await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetUser", new { id = user.UserID }, user);
         }
-
-
 
         // POST: api/Users/login
         [HttpPost("login")]
         public async Task<ActionResult> LoginUser([FromBody] LoginRequest request)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _context.Users.Include(u => u.Role).SingleOrDefaultAsync(u => u.Email == request.Email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                return Unauthorized("Invalid credentials.");
+                return Unauthorized("Неверные учетные данные.");
             }
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -103,11 +101,14 @@ namespace PLKTransit.Controllers
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-            new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
-            new Claim(ClaimTypes.Name, user.FirstName),
-            new Claim(ClaimTypes.Email, user.Email)
+                    new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+                    new Claim(ClaimTypes.Name, user.FirstName),
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(ClaimTypes.Role, user.Role.RoleName) // Добавляем роль в токен
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
+                Issuer = _configuration["Jwt:Issuer"], // Добавляем Issuer
+                Audience = _configuration["Jwt:Audience"], // Добавляем Audience
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -116,7 +117,6 @@ namespace PLKTransit.Controllers
             return Ok(new { Token = tokenString, User = new { user.UserID, user.FirstName, user.LastName, user.Email } });
         }
 
-
         // PUT: api/Users/5
         [HttpPut("{id}")]
         [Authorize]
@@ -124,7 +124,13 @@ namespace PLKTransit.Controllers
         {
             if (id != user.UserID)
             {
-                return BadRequest();
+                return BadRequest("ID пользователя не совпадает.");
+            }
+
+            // Проверка на уникальность email при обновлении
+            if (_context.Users.Any(u => u.Email == user.Email && u.UserID != id))
+            {
+                return BadRequest("Email уже используется другим пользователем.");
             }
 
             _context.Entry(user).State = EntityState.Modified;
@@ -159,6 +165,13 @@ namespace PLKTransit.Controllers
                 return NotFound();
             }
 
+            // Проверка, что пользователь не удаляет сам себя
+            var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            if (currentUserId == id)
+            {
+                return BadRequest("Нельзя удалить самого себя.");
+            }
+
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
 
@@ -171,6 +184,19 @@ namespace PLKTransit.Controllers
         }
     }
 
+    // Модель для запроса на регистрацию
+    public class RegisterUserRequest
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }  // Чистый пароль для запроса
+        public string PhoneNumber { get; set; }  // Не забудь добавить это поле, если оно нужно
+        public string CompanyName { get; set; }  // Не забудь добавить это поле, если оно нужно
+    }
+
+
+    // Модель для запроса на вход
     public class LoginRequest
     {
         public string Email { get; set; }
