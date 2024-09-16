@@ -17,11 +17,12 @@ builder.Services.AddDbContext<PLKTransitContext>(options =>
 // Add CORS policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins",
-        builder => builder.AllowAnyOrigin()
-                          .AllowAnyHeader()
-                          .AllowAnyMethod());
+    options.AddPolicy("AllowSpecificOrigin", builder =>
+        builder.WithOrigins("http://127.0.0.1:5500") // Разрешаем запросы с порта 5500
+               .AllowAnyHeader()
+               .AllowAnyMethod());
 });
+
 
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
@@ -101,8 +102,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseCors("AllowSpecificOrigin");
 
-app.UseCors("AllowAllOrigins");
 
 app.UseAuthentication(); // Enable JWT authentication
 app.UseAuthorization();  // Enable authorization after authentication

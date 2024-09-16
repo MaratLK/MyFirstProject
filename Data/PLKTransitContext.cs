@@ -29,6 +29,13 @@ namespace PLKTransit.Data
                 .HasOne(u => u.Role)
                 .WithMany()
                 .HasForeignKey(u => u.RoleID);
+
+            // Связь News и NewsImage с каскадным удалением
+            modelBuilder.Entity<News>()
+                .HasMany(n => n.NewsImages)
+                .WithOne(ni => ni.News)
+                .HasForeignKey(ni => ni.NewsID)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

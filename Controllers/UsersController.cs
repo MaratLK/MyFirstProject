@@ -104,17 +104,28 @@ namespace PLKTransit.Controllers
                     new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
                     new Claim(ClaimTypes.Name, user.FirstName),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role.RoleName) // Добавляем роль в токен
+                    new Claim(ClaimTypes.Role, user.Role.RoleName)
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
-                Issuer = _configuration["Jwt:Issuer"], // Добавляем Issuer
-                Audience = _configuration["Jwt:Audience"], // Добавляем Audience
+                Issuer = _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"],
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
-            return Ok(new { Token = tokenString, User = new { user.UserID, user.FirstName, user.LastName, user.Email } });
+            return Ok(new
+            {
+                Token = tokenString,
+                User = new
+                {
+                    user.UserID,
+                    user.FirstName,
+                    user.LastName,
+                    user.Email,
+                    Role = user.Role.RoleName
+                }
+            });
         }
 
         // PUT: api/Users/5
@@ -190,11 +201,10 @@ namespace PLKTransit.Controllers
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Email { get; set; }
-        public string Password { get; set; }  // Чистый пароль для запроса
-        public string PhoneNumber { get; set; }  // Не забудь добавить это поле, если оно нужно
-        public string CompanyName { get; set; }  // Не забудь добавить это поле, если оно нужно
+        public string Password { get; set; }
+        public string PhoneNumber { get; set; }
+        public string CompanyName { get; set; }
     }
-
 
     // Модель для запроса на вход
     public class LoginRequest
