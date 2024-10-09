@@ -4,11 +4,17 @@ using PLKTransit.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization; // Добавь это пространство имен
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Настройка для обхода циклических зависимостей
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+    });
 
 // Configure the database context with connection string
 builder.Services.AddDbContext<PLKTransitContext>(options =>
@@ -22,7 +28,6 @@ builder.Services.AddCors(options =>
                .AllowAnyHeader()
                .AllowAnyMethod());
 });
-
 
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
@@ -104,9 +109,9 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseCors("AllowSpecificOrigin");
 
-
 app.UseAuthentication(); // Enable JWT authentication
 app.UseAuthorization();  // Enable authorization after authentication
+app.UseStaticFiles(); // Включает возможность сервера отдавать статические файлы из wwwroot
 
 app.MapControllers();  // Map all controller endpoints
 

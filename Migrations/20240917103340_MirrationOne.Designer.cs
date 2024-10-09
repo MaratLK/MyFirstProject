@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PLKTransit.Data;
 
@@ -11,9 +12,11 @@ using PLKTransit.Data;
 namespace PLK_TwoTry_Back.Migrations
 {
     [DbContext(typeof(PLKTransitContext))]
-    partial class PLKTransitContextModelSnapshot : ModelSnapshot
+    [Migration("20240917103340_MirrationOne")]
+    partial class MirrationOne
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,7 +38,6 @@ namespace PLK_TwoTry_Back.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("DatePublished")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Title")

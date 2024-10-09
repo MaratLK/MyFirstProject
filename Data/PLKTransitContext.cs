@@ -8,13 +8,6 @@ namespace PLKTransit.Data
         public PLKTransitContext(DbContextOptions<PLKTransitContext> options) : base(options) { }
 
         public DbSet<Users> Users { get; set; }
-        public DbSet<Orders> Orders { get; set; }
-        public DbSet<Services> Services { get; set; }
-        public DbSet<OrderServices> OrderServices { get; set; }
-        public DbSet<Warehouses> Warehouses { get; set; }
-        public DbSet<SpecialVehicles> SpecialVehicles { get; set; }
-        public DbSet<VehicleAssignments> VehicleAssignments { get; set; }
-        public DbSet<WarehouseAssignments> WarehouseAssignments { get; set; }
         public DbSet<News> News { get; set; }
         public DbSet<NewsImage> NewsImages { get; set; }
         public DbSet<Roles> Roles { get; set; }
@@ -39,3 +32,4 @@ namespace PLKTransit.Data
         }
     }
 }
+    
