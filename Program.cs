@@ -4,7 +4,7 @@ using PLKTransit.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using System.Text.Json.Serialization; // Добавь это пространство имен
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,9 +24,10 @@ builder.Services.AddDbContext<PLKTransitContext>(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin", builder =>
-        builder.WithOrigins("http://127.0.0.1:5500") // Разрешаем запросы с порта 5500
+        builder.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500") // Укажите оба варианта
                .AllowAnyHeader()
-               .AllowAnyMethod());
+               .AllowAnyMethod()
+               .AllowCredentials()); // Добавьте это, если используется аутентификация
 });
 
 // Add JWT Authentication
